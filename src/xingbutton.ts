@@ -1,8 +1,9 @@
-///<reference path="../node_modules/angular2/typings/browser.d.ts"/>
-/**
- * Created by sialcasa on 17.02.16.
- /*
- * (C) Copyright 2016 Alexander Casall and others.
+/*
+ * Angular Directive "ngXingLogin"
+ *
+ * by Christian Pätzold
+ * based on Angular 2 Directive by by Alexander Casall
+ * see https://github.com/sialcasa/angular2-xingbutton
  *
  * Licensed under the Apache License, Version 2.0 (the 'License');
  * you may not use this file except in compliance with the License.
@@ -15,92 +16,127 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
-import {Component} from 'angular2/core';
-import {Input} from 'angular2/core';
-import {AfterViewInit} from 'angular2/core';
-import {ElementRef} from 'angular2/core';
-import {HostBinding} from 'angular2/core';
-import {HostListener} from 'angular2/core';
-import {Directive} from 'angular2/core';
-import {EventEmitter} from 'angular2/core';
-import {Output} from 'angular2/core';
 
-@Directive({
-    selector: 'xing-login'
-})
+module App.Directives {
+    "use strict";
 
-export class XingLogin implements AfterViewInit {
+    interface IXingAttributes extends ng.IAttributes {
 
-    //TODO rerender component, when input changes
-    @Input() consumerKey:string;
-    @Input() language:string = 'en';
-    @Input() size:string = 'medium';
-    @Input() color:string = 'green';
+        // configuration
+        consumerKey: string;
+        language: string;
+        size: string;
+        color: string;
 
-    @Output() onLoginSucceded:EventEmitter<any> = new EventEmitter();
-    @Output() onLoginFailed:EventEmitter<any> = new EventEmitter();
-
-    constructor(private el:ElementRef) {
+        // methods
+        onSuccess: string;
+        onFailed: string;
     }
 
-    ngAfterViewInit():any {
-        this.renderXingConfigParams();
-        this.renderXingCallbackHandler();
-        this.renderXingLoginButton();
+    interface IXingLoginResult {
+        error: string;
+        user: IXingUser;
     }
 
-    @HostListener('xing-login-event', ['$event.detail'])
-    onXingAuth(response:any) {
-        //TODO Transform error and response to DTO
-        if(response.user){
-            this.onLoginSucceded.emit(response.user);
-        }
-        if(response.error){
-            this.onLoginFailed.emit(response.error);
-        }
-    }
-
-    private renderXingLoginButton() {
-        let activationScript = document.createElement('script');
-        activationScript.text = `
-      (function(d) {
-        var js, id='lwx';
-        if (d.getElementById(id)) return;
-        js = d.createElement('script'); js.id = id; js.src = 'https://www.xing-share.com/plugins/login.js';
-        d.getElementsByTagName('xing-login')[0].appendChild(js)
-       }(document));
-    `
-        this.el.nativeElement.appendChild(activationScript);
-    };
-
-    private renderXingCallbackHandler() {
-        let callbackScript = document.createElement('script');
-        callbackScript.text = `function onXingAuthLogin(response) {
-        var output;
-        var event = new CustomEvent('xing-login-event', {
-            detail: {
-                error: response.error,
-                user: response.user
+    export interface IXingUser {
+        id: string,
+        first_name: string,
+        last_name: string,
+        display_name: string,
+        active_email: string,
+        permalink: string,
+        business_address: {
+            street: string,
+            city: string,
+            province: string,
+            country: string
+        },
+        photo_urls: {
+            maxi_thumb: string,
+        },
+        professional_experience: {
+            primary_company: {
+                name: string,
+                title: string,
+                industry: string,
             }
-        });
-        document.getElementsByTagName('xing-login')[0].dispatchEvent(event);
-      }`;
-        this.el.nativeElement.appendChild(callbackScript);
-    };
+        },
+        error: string
+    }
 
-    private renderXingConfigParams() {
-        let consumerKey = document.createElement('script');
-        consumerKey.setAttribute('type', 'xing/login');
-        consumerKey.text = `
-      {
-        'consumer_key': '` + this.consumerKey + `',
-        'language': '` + this.language + `',
-        'size': '` + this.size + `',
-        'color': '` + this.color + `'
-      }
-    `;
-        this.el.nativeElement.appendChild(consumerKey);
-    };
+    app.directive("ngXingLogin", () => {
+        return {
+            restrict: "E",
+            link: (
+                $scope: ng.IScope,
+                $element: ng.IAugmentedJQuery,
+                $attrs: IXingAttributes) => {
+
+                // --- private methods ----------------------------------------------------------------------------------------------------
+
+                var renderXingLoginButton = () => {
+                    let activationScript = document.createElement("script");
+                    activationScript.text = `
+                        (function (d) {
+                            var js, id = "lwx";
+                            if (d.getElementById(id)) return;
+                            js = d.createElement("script"); js.id = id; js.src = "https://www.xing-share.com/plugins/login.js";
+                            d.getElementsByTagName("ng-xing-login")[0].appendChild(js)
+                        }(document));
+                    `;
+                    $element.append(activationScript);
+                };
+
+                var renderXingCallbackHandler = () => {
+                    let callbackScript = document.createElement("script");
+                    callbackScript.text = `function onXingAuthLogin(response) {
+                        var output;
+                        var event = new CustomEvent("xing-login-event", {
+                            detail: {
+                                error: response.error,
+                                user: response.user
+                            }
+                        });
+                        document.getElementsByTagName("ng-xing-login")[0].dispatchEvent(event);
+                    }`;
+                    $element.append(callbackScript);
+                };
+
+                var renderXingConfigParams = () => {
+                    let consumerKey = document.createElement("script");
+                    consumerKey.setAttribute("type", "xing/login");
+                    consumerKey.text = `
+                        {
+                            "consumer_key": "` + $attrs.consumerKey + `",
+                            "language": "` + $attrs.language + `",
+                            "size": "` + $attrs.size + `",
+                            "color": "` + $attrs.color + `"
+                        }
+                    `;
+                    $element.append(consumerKey);
+                };
+
+
+                // --- Bindings -----------------------------------------------------------------------------------------------------------
+
+                $element.on("xing-login-event", e => {
+                    var detail = (e.originalEvent as any).detail as IXingLoginResult;
+
+                    if (detail.error) {
+                        $scope.$eval($attrs.onFailed, { $error: detail.error });
+                    } else {
+                        $scope.$eval($attrs.onSuccess, { $user: detail.user });
+                    }
+                });
+
+
+                // --- Init ---------------------------------------------------------------------------------------------------------------
+
+                renderXingConfigParams();
+                renderXingCallbackHandler();
+                renderXingLoginButton();
+            }
+        }
+    });
 }
