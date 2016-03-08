@@ -36,10 +36,10 @@ Unique identifier for your plugin tuned to work only on the domain you specified
 * green
 * gray
 
-#### onLoginSucceded (optional event)
+#### onLoginSucceded (expression, optional)
 * is called when login was sucessful 
-* provides a user token
+* provides a "$user" object
 
-#### onLoginFailed (optional event)
+#### onLoginFailed (expression, optional)
 * is called when login failed
-* provides an error
+* provides an "$error" object
