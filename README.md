@@ -5,8 +5,13 @@
 * Then you can use the component like this:
  
 ```XML
-<xing-login consumerKey="PUTYOURCONSUMERKEYHERE" (onLoginSucceded) = "login($event)" 
-    (onLoginFailed) ="loginFailed($event)"></xing-login>
+<ng-xing-login consumerKey="PUTYOURCONSUMERKEYHERE" 
+               language="de" 
+               size="xlarge" 
+               color="grey" 
+               on-success="vm.doSomethingWithUser($user)" 
+               on-failed="alert($error)"
+></xing-login>
 ```
 
 ##Configuration Options
